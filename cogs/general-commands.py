@@ -1,5 +1,4 @@
-from itertools import count
-from operator import itemgetter
+import datetime
 import discord
 from db_actions import Database
 from discord.ext import commands
@@ -17,14 +16,36 @@ class GeneralCommands(commands.Cog):
     @commands.command()
     async def profile(self, ctx, user : discord.Member = None):
         if user == None:
-            user_id = ctx.author.id
-            elo = Database.find_elo(ctx.author.id)
-        else:
-            user_id = (user.id)
-            elo = Database.find_elo(user.id)
+            user = ctx.author
+
+        elo = Database.find_elo(user.id)
 
         if elo != None:
-            await ctx.send(f"ELO of <@{user_id}> is `{elo}`")
+            rolelist = [r.mention for r in user.roles if r != ctx.guild.default_role]
+            roles = ", ".join(rolelist)
+
+            bot_name = self.client.user.name
+            bot_pfp = self.client.user.avatar_url
+
+            embed=discord.Embed(title=f"User details", description=f"Details of {user.mention}", color=user.top_role.color)
+            embed.set_thumbnail(url=user.avatar_url)
+
+            embed.add_field(name="ID", value=user.id, inline=True)
+            embed.add_field(name="Tag", value=f"{user.name}#{user.discriminator}", inline=True)
+            embed.add_field(name="Effective name", value=user.nick, inline=True)
+
+            embed.add_field(name="Avatar", value=user.avatar_url, inline=False)
+
+            embed.add_field(name="Elo", value=elo, inline=False)
+
+            embed.add_field(name="Joined at", value=user.joined_at, inline=False)
+            embed.add_field(name="roles", value=roles, inline=False)
+
+            embed.set_footer(text=bot_name, icon_url=bot_pfp)
+            embed.timestamp = datetime.datetime.now()
+
+            await ctx.send(embed=embed)
+
         else:
             await ctx.send(f"{ctx.author.mention} is not registered, they can register with `.register`")
     
